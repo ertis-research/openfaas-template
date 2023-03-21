@@ -34,9 +34,10 @@ RUN mkdir -p function
 RUN touch ./function/__init__.py
 WORKDIR /home/app/function/
 COPY --chown=app:app function/requirements.txt	.
-RUN pip install --no-cache-dir -r requirements.txt
 
 USER root
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY --chown=app:app function/   .
 
 FROM build as test
