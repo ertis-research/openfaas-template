@@ -2,6 +2,8 @@ ARG DOCKER_TENSOR_TAG=r22.01-tf-2.7.0-eigen
 FROM ghcr.io/openfaas/of-watchdog:0.9.10 as watchdog
 FROM armswdev/tensorflow-arm-neoverse:${DOCKER_TENSOR_TAG} as build
 
+USER root
+
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
 
