@@ -18,7 +18,6 @@ RUN apt-get -qy update \
 RUN addgroup --system app && adduser app --system --ingroup app
 RUN chown app /home/app
 
-USER app
 
 ENV PATH=$PATH:/home/app/.local/bin
 
@@ -26,16 +25,13 @@ WORKDIR /home/app/
 
 COPY --chown=app:app index.py           .
 COPY --chown=app:app requirements.txt   .
-USER root
 RUN pip install --no-cache-dir -r requirements.txt
-USER app
 
 RUN mkdir -p function
 RUN touch ./function/__init__.py
 WORKDIR /home/app/function/
 COPY --chown=app:app function/requirements.txt	.
 
-USER root
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=app:app function/   .
@@ -50,7 +46,6 @@ RUN [ "$TEST_ENABLED" = "false" ] && echo "skipping tests" || eval "$TEST_COMMAN
 FROM build as ship
 WORKDIR /home/app/
 
-USER app
 
 # Set up of-watchdog for HTTP mode
 ENV fprocess="python index.py"
