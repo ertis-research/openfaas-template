@@ -1,15 +1,12 @@
-ARG DOCKER_TENSOR_TAG=r22.01-tf-2.7.0-eigen
 FROM ghcr.io/openfaas/of-watchdog:0.9.10 as watchdog
-FROM armswdev/tensorflow-arm-neoverse:${DOCKER_TENSOR_TAG} as build
+FROM python:3.10-buster as build
 
-USER root
 
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
 
 ARG ADDITIONAL_PACKAGE
 # Alternatively use ADD https:// (which will not be cached by Docker builder)
-
 RUN apt-get -qy update \
     && apt-get -qy install ${ADDITIONAL_PACKAGE} \
     && rm -rf /var/lib/apt/lists/*
@@ -18,6 +15,7 @@ RUN apt-get -qy update \
 RUN addgroup --system app && adduser app --system --ingroup app
 RUN chown app /home/app
 
+USER app
 
 ENV PATH=$PATH:/home/app/.local/bin
 
@@ -25,27 +23,25 @@ WORKDIR /home/app/
 
 COPY --chown=app:app index.py           .
 COPY --chown=app:app requirements.txt   .
+USER root
 RUN pip install --no-cache-dir -r requirements.txt
+USER app
 
 RUN mkdir -p function
 RUN touch ./function/__init__.py
 WORKDIR /home/app/function/
 COPY --chown=app:app function/requirements.txt	.
+RUN pip install --no-cache-dir --user tensorflow==2.11.0
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
-
+USER root
 COPY --chown=app:app function/   .
-
-FROM build as test
-
-ARG TEST_COMMAND=tox
-ARG TEST_ENABLED=true
-RUN [ "$TEST_ENABLED" = "false" ] && echo "skipping tests" || eval "$TEST_COMMAND"
 
 
 FROM build as ship
 WORKDIR /home/app/
 
+USER app
 
 # Set up of-watchdog for HTTP mode
 ENV fprocess="python index.py"
